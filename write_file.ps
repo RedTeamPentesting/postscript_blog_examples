@@ -1,0 +1,161 @@
+%!PS-Adobe-3.0 EPSF-3.0
+%%Pages: 1
+%%BoundingBox:   36   36  576  756
+%%LanguageLevel: 1
+%%EndComments
+%%BeginProlog
+%%EndProlog
+
+%%%>>>Configurable variables<<<
+
+% how many chars per line
+/charactercount 100 def
+
+%%%page setup
+
+% white page
+1 1 1 setrgbcolor clippath fill
+% black text
+0 0 0 setrgbcolor
+/pagewidth currentpagedevice /PageSize get 0 get def
+/pageheight currentpagedevice /PageSize get 1 get def
+
+% calculate the character width
+/characterWidth pagewidth charactercount div def
+
+/Courier findfont setfont
+
+/curWidth (-) stringwidth pop def
+
+/Courier findfont characterWidth curWidth div scalefont setfont
+
+/lineheight characterWidth curWidth div def
+
+% initial x and y positions
+/xposinit 10 def
+/yposinit pageheight lineheight sub def
+
+/xpos xposinit def
+/ypos yposinit def
+xpos ypos moveto
+
+
+
+%%% base64 encoding code
+% http://www.sunshine2k.de/articles/coding/base64/understanding_base64.html
+/base64DecodingTable [
+    80 80 80 80 80 80 80 80 80 80 80 80 80 80 80 80 %/* 0 - 15 */
+    80 80 80 80 80 80 80 80 80 80 80 80 80 80 80 80 %/* 16 - 31 */
+    80 80 80 80 80 80 80 80 80 80 80 62 80 80 80 63 %/* 32 - 47 */
+    52 53 54 55 56 57 58 59 60 61 80 80 80 64 80 80 %/* 48 - 63 */
+    80  0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 %/* 64 - 79 */
+    15 16 17 18 19 20 21 22 23 24 25 80 80 80 80 80 %/* 80 - 96 */
+    80 26 27 28 29 30 31 32 33 34 35 36 37 38 39 40 %/* 87 - 111 */
+    41 42 43 44 45 46 47 48 49 50 51 80 80 80 80 80 %/* 112 - 127 */
+] def
+
+
+% takes 4 base64-encoded chars and returns their max 3 byte values
+/FourCharsToThreeBytes {
+        /inputChars exch def
+	/c1 base64DecodingTable inputChars 0 get get def
+	/c2 base64DecodingTable inputChars 1 get get def
+	/c3 base64DecodingTable inputChars 2 get get def
+	/c4 base64DecodingTable inputChars 3 get get def
+
+	/b1 
+		c1 2#00111111 and 2 bitshift
+		c2 2#00110000 and -4 bitshift
+		xor
+	def
+	% handle padding chars
+	c3 64 eq c4 64 eq and {
+		b1
+	} {
+		/b2
+			c2 2#00001111 and 4 bitshift
+			c3 2#00111100 and -2 bitshift
+			xor
+		def
+
+		c4 64 eq {
+	                b1 b2       
+	        } { 
+			/b3
+				c3 2#00000011 and 6 bitshift
+				c4 2#00111111 and
+				xor
+			def
+			b1 b2 b3
+		} ifelse
+	} ifelse
+} def
+
+/base64Decode {
+	/inputString exch def
+	[
+	0 4 inputString length 1 sub {
+		/i exch def
+
+		[inputString i 4 getinterval {} forall] FourCharsToThreeBytes
+	} for
+	]
+} def
+
+% https://github.com/sheepdoll/fpcb/blob/master/k2e.ps
+/makestring { 
+	%verbose 2 gt {(<) print =$} if
+	dup length string       % new string of right size
+	dup /NullEncode filter      % make a file out of string
+	2 index                 % array to stack top
+    { 2 copy write pop }         % integers to string
+	forall
+    flushfile exch pop                   % clean up
+} bind def
+
+%%%printing code
+% function for changing lines and pages
+/newline {
+	/lineheight exch def
+
+        % new page if we are at the bottom of the page
+        ypos lineheight lt {
+                showpage
+                /xpos xposinit def
+                /ypos yposinit def
+                xpos ypos moveto
+        } if
+
+	% decrease y position
+        ypos lineheight sub
+        /ypos exch def
+
+        % move cursor
+        xpos ypos moveto
+} def
+
+%%% actual code
+{
+	/outfile (/tmp/testfile.txt) (w) file def
+
+	%%%WRITING PLAINTEXT:
+	% outfile (Output string which will be written to outfile) writestring
+
+	%%%DECODE BASE64 AND WRITE:
+	(SGFsbG8gV2VsdAo=) base64Decode { outfile exch write } forall
+	outfile closefile
+
+} stopped {
+	% if an error occurs, the cause is printed
+	/errormessage {
+		$error /errorname get 50 string cvs
+	} def
+	(printing file failed : ) show
+	lineheight newline
+	errormessage show
+} { 
+	(Writing file successful!) show
+} ifelse % error catching frame
+
+showpage
+0 quit

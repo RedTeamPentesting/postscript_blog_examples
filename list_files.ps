@@ -1,0 +1,81 @@
+%!PS-Adobe-3.0 EPSF-3.0
+%%Pages: 1
+%%BoundingBox:   36   36  576  756
+%%LanguageLevel: 1
+%%EndComments
+%%BeginProlog
+%%EndProlog
+
+%%%>>>Configurable variables<<<
+
+% how many chars per line
+/charactercount 100 def
+/target_directory (/tmp/*) def
+
+%%%page setup
+
+% white page
+1 1 1 setrgbcolor clippath fill
+% black text
+0 0 0 setrgbcolor
+/pagewidth currentpagedevice /PageSize get 0 get def
+/pageheight currentpagedevice /PageSize get 1 get def
+
+% calculate the character width
+/characterWidth pagewidth charactercount div def
+
+/Courier findfont setfont
+
+/curWidth (-) stringwidth pop def
+
+/Courier findfont characterWidth curWidth div scalefont setfont
+
+/lineheight characterWidth curWidth div def
+
+% initial x and y positions
+/xposinit 10 def
+/yposinit pageheight lineheight sub def
+
+/xpos xposinit def
+/ypos yposinit def
+xpos ypos moveto
+
+%%%printing code
+% function for changing lines and pages
+/newline {
+	/lineheight exch def
+
+        % new page if we are at the bottom of the page
+        ypos lineheight lt {
+                showpage
+                /xpos xposinit def
+                /ypos yposinit def
+                xpos ypos moveto
+        } if
+
+	% decrease y position
+        ypos lineheight sub
+        /ypos exch def
+
+        % move cursor
+        xpos ypos moveto
+} def
+
+%%% actual code
+{
+	target_directory { %filenameforall
+		show
+		lineheight newline
+	} 4096 string filenameforall
+} stopped {
+	% if an error occurs, the cause is printed
+	/errormessage {
+		$error /errorname get 50 string cvs
+	} def
+	(listing files failed : ) show
+	lineheight newline
+	errormessage show
+} { } ifelse % error catching frame
+
+showpage
+0 quit

