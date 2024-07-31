@@ -1,17 +1,21 @@
 %!PS-Adobe-3.0 EPSF-3.0
 %%Pages: 1
-%%BoundingBox:   36   36  576  756
+%%BoundingBox:   0 0 1000 1000
 %%LanguageLevel: 1
 %%EndComments
 %%BeginProlog
 %%EndProlog
 
-%%%>>>Configurable variables<<<
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%                                      %
+%  RedTeam Pentesting GmbH             %
+%  kontakt@redteam-pentesting.de       %
+%  https://www.redteam-pentesting.de/  %
+%                                      %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-% how many chars per line
+%%%%%%%%%%%%%%%%%%% Page Setup
 /charactercount 100 def
-
-%%%page setup
 
 % white page
 1 1 1 setrgbcolor clippath fill
@@ -41,7 +45,7 @@ xpos ypos moveto
 
 
 
-%%% base64 encoding code
+%%%%%%%%%%%%%%%%%%% Base64 Encoding Code
 % http://www.sunshine2k.de/articles/coding/base64/understanding_base64.html
 /base64DecodingTable [
     80 80 80 80 80 80 80 80 80 80 80 80 80 80 80 80 %/* 0 - 15 */
@@ -55,107 +59,98 @@ xpos ypos moveto
 ] def
 
 
-% takes 4 base64-encoded chars and returns their max 3 byte values
+% takes 4 base64-encoded chars and returns their 3 byte values
+% inputChars FourCharsToThreeBytes outputBytes
 /FourCharsToThreeBytes {
-        /inputChars exch def
-	/c1 base64DecodingTable inputChars 0 get get def
-	/c2 base64DecodingTable inputChars 1 get get def
-	/c3 base64DecodingTable inputChars 2 get get def
-	/c4 base64DecodingTable inputChars 3 get get def
+    /inputChars exch def
+    /c1 base64DecodingTable inputChars 0 get get def
+    /c2 base64DecodingTable inputChars 1 get get def
+    /c3 base64DecodingTable inputChars 2 get get def
+    /c4 base64DecodingTable inputChars 3 get get def
 
-	/b1 
-		c1 2#00111111 and 2 bitshift
-		c2 2#00110000 and -4 bitshift
-		xor
-	def
-	% handle padding chars
-	c3 64 eq c4 64 eq and {
-		b1
-	} {
-		/b2
-			c2 2#00001111 and 4 bitshift
-			c3 2#00111100 and -2 bitshift
-			xor
-		def
+    /b1
+        c1 2#00111111 and 2 bitshift
+        c2 2#00110000 and -4 bitshift
+        xor
+    def
+    % handle padding chars
+    c3 64 eq c4 64 eq and {
+        b1
+    } {
+        /b2
+            c2 2#00001111 and 4 bitshift
+            c3 2#00111100 and -2 bitshift
+            xor
+        def
 
-		c4 64 eq {
-	                b1 b2       
-	        } { 
-			/b3
-				c3 2#00000011 and 6 bitshift
-				c4 2#00111111 and
-				xor
-			def
-			b1 b2 b3
-		} ifelse
-	} ifelse
+        c4 64 eq {
+            b1 b2
+        } {
+            /b3
+                c3 2#00000011 and 6 bitshift
+                c4 2#00111111 and
+                xor
+            def
+            b1 b2 b3
+        } ifelse
+    } ifelse
 } def
 
+% Decodes a Base64-encoded String to bytes
+% base64InputString base64Decode byteArray
 /base64Decode {
-	/inputString exch def
-	[
-	0 4 inputString length 1 sub {
-		/i exch def
+    /inputString exch def
+    [
+    0 4 inputString length 1 sub {
+        /i exch def
 
-		[inputString i 4 getinterval {} forall] FourCharsToThreeBytes
-	} for
-	]
+        [inputString i 4 getinterval {} forall] FourCharsToThreeBytes
+    } for
+    ]
 } def
 
-% https://github.com/sheepdoll/fpcb/blob/master/k2e.ps
-/makestring { 
-	%verbose 2 gt {(<) print =$} if
-	dup length string       % new string of right size
-	dup /NullEncode filter      % make a file out of string
-	2 index                 % array to stack top
-    { 2 copy write pop }         % integers to string
-	forall
-    flushfile exch pop                   % clean up
-} bind def
-
-%%%printing code
-% function for changing lines and pages
+%%%%%%%%%%%%%%%%%%% Printing Code
+% Move to new line and go to next page if current page is full
+% lineheight newline -
 /newline {
-	/lineheight exch def
+    /lineheight exch def
 
-        % new page if we are at the bottom of the page
-        ypos lineheight lt {
-                showpage
-                /xpos xposinit def
-                /ypos yposinit def
-                xpos ypos moveto
-        } if
-
-	% decrease y position
-        ypos lineheight sub
-        /ypos exch def
-
-        % move cursor
+    % new page if we are at the bottom of the page
+    ypos lineheight lt {
+        showpage
+        /xpos xposinit def
+        /ypos yposinit def
         xpos ypos moveto
+    } if
+
+    % decrease y position
+    ypos lineheight sub
+    /ypos exch def
+
+    % move cursor
+    xpos ypos moveto
 } def
 
-%%% actual code
+%%%%%%%%%%%%%%%%%%% Actual Code
 {
-	/outfile (/tmp/testfile.txt) (w) file def
+    /outfile (/tmp/testfile.txt) (w) file def
 
-	%%%WRITING PLAINTEXT:
-	% outfile (Output string which will be written to outfile) writestring
+    %%%WRITING PLAINTEXT:
+    % outfile (Output string which will be written to outfile) writestring
 
-	%%%DECODE BASE64 AND WRITE:
-	(SGFsbG8gV2VsdAo=) base64Decode { outfile exch write } forall
-	outfile closefile
-
+    %%%DECODE BASE64 AND WRITE:
+    (SGFsbG8gV2VsdAo=) base64Decode { outfile exch write } forall
+    outfile closefile
 } stopped {
-	% if an error occurs, the cause is printed
-	/errormessage {
-		$error /errorname get 50 string cvs
-	} def
-	(printing file failed : ) show
-	lineheight newline
-	errormessage show
-} { 
-	(Writing file successful!) show
+    % if an error occurs, the cause is printed
+    /errormessage {
+        $error /errorname get 50 string cvs
+    } def
+    (printing file failed : ) show
+    lineheight newline
+    errormessage show
+} {
+    (Writing file successful!) show
 } ifelse % error catching frame
 
 showpage
-0 quit

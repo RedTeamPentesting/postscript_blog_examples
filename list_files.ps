@@ -1,28 +1,40 @@
 %!PS-Adobe-3.0 EPSF-3.0
 %%Pages: 1
-%%BoundingBox:   36   36  576  756
+%%BoundingBox:   0 0 1000 1000
 %%LanguageLevel: 1
 %%EndComments
 %%BeginProlog
 %%EndProlog
 
-%%%>>>Configurable variables<<<
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%                                      %
+%  RedTeam Pentesting GmbH             %
+%  kontakt@redteam-pentesting.de       %
+%  https://www.redteam-pentesting.de/  %
+%                                      %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%%%%%%%%%%%%%%%%%% Configurable Variables
 
 % how many chars per line
 /charactercount 100 def
+
+% Which directory should be listed
 /target_directory (/tmp/*) def
 
-%%%page setup
+%%%%%%%%%%%%%%%%%%% Page Setup
+/xposinit 0 def
 
 % white page
 1 1 1 setrgbcolor clippath fill
 % black text
 0 0 0 setrgbcolor
+
 /pagewidth currentpagedevice /PageSize get 0 get def
 /pageheight currentpagedevice /PageSize get 1 get def
 
 % calculate the character width
-/characterWidth pagewidth charactercount div def
+/characterWidth pagewidth xposinit sub charactercount 2 add div def
 
 /Courier findfont setfont
 
@@ -33,49 +45,78 @@
 /lineheight characterWidth curWidth div def
 
 % initial x and y positions
-/xposinit 10 def
 /yposinit pageheight lineheight sub def
 
 /xpos xposinit def
 /ypos yposinit def
 xpos ypos moveto
 
-%%%printing code
-% function for changing lines and pages
+%%%%%%%%%%%%%%%%%%% Printing Code
+
+% Move to new line and go to next page if current page is full
+% lineheight newline -
 /newline {
-	/lineheight exch def
+    /lineheight exch def
 
-        % new page if we are at the bottom of the page
-        ypos lineheight lt {
-                showpage
-                /xpos xposinit def
-                /ypos yposinit def
-                xpos ypos moveto
-        } if
-
-	% decrease y position
-        ypos lineheight sub
-        /ypos exch def
-
-        % move cursor
+    % new page if we are at the bottom of the page
+    ypos lineheight lt {
+        showpage
+        /xpos xposinit def
+        /ypos yposinit def
         xpos ypos moveto
+    } if
+
+    % decrease y position
+    ypos lineheight sub
+    /ypos exch def
+
+    % move cursor
+    xpos ypos moveto
 } def
 
-%%% actual code
+% Draws a triangle at the current position
+% Used for indicating a forced linebreak if the current line is too long
+% - drawtri -
+/drawtri {
+    /width 5 def
+    currentpoint
+    /curY exch def
+    /curX exch def
+    newpath
+    curX curY lineheight 2 div add moveto
+    curX width add curY lineheight 4 div add lineto
+    curX curY lineto
+    curX curY lineheight 2 div add lineto
+    closepath
+    fill
+    stroke
+    curX width add curY moveto
+} def
+
+%%%%%%%%%%%%%%%%%%% Actual Code
 {
-	target_directory { %filenameforall
-		show
-		lineheight newline
-	} 4096 string filenameforall
+    target_directory { %filenameforall
+        /curFileName exch def
+
+        % print filename and create new lines if needed
+        0 charactercount curFileName length {
+            /i exch def
+            i 0 gt {
+                drawtri
+            } if
+            /remaining curFileName length i sub def
+            curFileName i charactercount remaining min getinterval show
+            lineheight newline
+        } for
+    } 4096 string filenameforall
 } stopped {
-	% if an error occurs, the cause is printed
-	/errormessage {
-		$error /errorname get 50 string cvs
-	} def
-	(listing files failed : ) show
-	lineheight newline
-	errormessage show
+    % if an error occurs, the cause is printed
+    /errormessage {
+        $error /errorname get 50 string cvs
+    } def
+    (listing files failed : ) show
+    lineheight newline
+    errormessage show
 } { } ifelse % error catching frame
 
 showpage
-0 quit

